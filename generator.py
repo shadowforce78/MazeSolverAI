@@ -1,65 +1,41 @@
-# Make a 100x100 grid of 0s
-
 import numpy as np
+import random
 
-grid = np.zeros((100, 100), dtype=int)
-np.savetxt('grid.txt', grid, fmt='%d', delimiter=' ')
+def generate_maze(width, height):
+    # Initialize the grid with walls
+    maze = np.ones((height, width), dtype=int)
+    
+    def carve_passages_from(start_x, start_y):
+        stack = [(start_x, start_y)]
+        maze[start_y][start_x] = 0
+        
+        while stack:
+            cx, cy = stack[-1]
+            directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]
+            random.shuffle(directions)
+            carved = False
+            
+            for direction in directions:
+                nx, ny = cx + direction[0] * 2, cy + direction[1] * 2
+                if 1 <= nx < width - 1 and 1 <= ny < height - 1 and maze[ny][nx] == 1:
+                    maze[cy + direction[1]][cx + direction[0]] = 0
+                    maze[ny][nx] = 0
+                    stack.append((nx, ny))
+                    carved = True
+                    break
+            
+            if not carved:
+                stack.pop()
+    
+    start_x, start_y = width - 2, 1  # Start just inside the top right corner
+    carve_passages_from(start_x, start_y)
+    
+    return maze
 
+def save_maze_to_file(maze, filename):
+    np.savetxt(filename, maze, fmt='%d')
 
-def make_path_ways(grid_file):
-    # Read the grid file
-    grid = np.loadtxt(grid_file, dtype=int, delimiter=' ')
-
-    # Replace random 0s with 2s (pathways) in the grid
-    for i in range(100):
-        for j in range(100):
-            if np.random.randint(0, 100) < 10:
-                grid[i, j] = 2
-
-    # Link every 2s with 1s (one way)
-    for i in range(100):
-        for j in range(100):
-            if grid[i, j] == 2:
-                if i-1 >= 0 and grid[i-1, j] == 0:
-                    grid[i-1, j] = 1
-                if i+1 < 100 and grid[i+1, j] == 0:
-                    grid[i+1, j] = 1
-                if j-1 >= 0 and grid[i, j-1] == 0:
-                    grid[i, j-1] = 1
-                if j+1 < 100 and grid[i, j+1] == 0:
-                    grid[i, j+1] = 1
-
-    # Replace 2s with 1s in the grid
-    for i in range(100):
-        for j in range(100):
-            if grid[i, j] == 2:
-                grid[i, j] = 1
-
-    # Save the grid with pathways
-    np.savetxt('grid_with_pathways.txt', grid, fmt='%d', delimiter=' ')
-
-
-def bautify_maze(grid_file):
-    # Read the grid file
-    grid = np.loadtxt(grid_file, dtype=int, delimiter=' ')
-
-    # 0 = empty, 1 = wall, 2 = pathway
-    # 0 = 🟢 
-    # 1 = 🔴
-    # 2 = 🟡
-
-    # Print maze but with characters
-    for i in range(100):
-        for j in range(100):
-            if grid[i, j] == 0:
-                print('🟢', end=' ')
-            elif grid[i, j] == 1:
-                print('🔴', end=' ')
-            else:
-                print('🟡', end=' ')
-        print()
-
-
-
-make_path_ways('grid.txt')
-bautify_maze('grid_with_pathways.txt')
+if __name__ == "__main__":
+    width, height = 102, 102  # Add 2 to width and height for the outer walls
+    maze = generate_maze(width, height)
+    save_maze_to_file(maze, "maze.txt")
